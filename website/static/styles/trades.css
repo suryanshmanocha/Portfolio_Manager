@@ -1,0 +1,62 @@
+.container-fluid {
+    margin-bottom: 150px;
+}
+
+.buy {
+    background-color: mediumseagreen;
+    border-color: #34a434;
+    padding-inline: 3%;
+    color: white;
+}
+
+.sell {
+    background-color: #e84242;
+    border-color: #34a434;
+    padding-inline: 3%;
+    color: white;
+}
+
+#bottom {
+    position: fixed;
+    bottom: 1%;
+    width: 100%;
+    margin: auto;
+    text-align: center;
+    background-color: #f4f4f4;
+    padding: 10px;
+    opacity: 0.92;
+}
+
+.input-group {
+    width: 50%;
+    text-align: center;
+    margin: auto;
+}
+
+.tradeContainer {
+    width: 70%;
+    text-align: center;
+    margin: auto;
+    margin-bottom: 1rem!important;
+    margin-top: 1rem!important;
+}
+
+.vdiv {
+    border-right: 1px solid #d1d1d1!important;
+}
+
+.trade {
+    width: 10%;
+}
+
+.stock {
+    width: 20%;
+}
+
+.table {
+    margin-bottom: 0!important;
+}
+
+.col-md-5 {
+
+}

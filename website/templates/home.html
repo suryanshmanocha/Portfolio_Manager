@@ -1,0 +1,447 @@
+{% extends "base.html" %} {% block title %}Home{% endblock %}
+
+{% block content %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+<h1 class="display-3"> Performance </h1>
+
+<!-- Badges showing key statistics -->
+<div class="row">
+  <div class="col-sm">
+    <div class="container-fluid shadow-sm p-3 mb-5 bg-white rounded">
+      <h5> Portfolio value </h5>
+      <p style="margin-bottom: 0"> £{{"{:.2f}".format(portfolio_value)}}
+        <sup style="color:limegreen">
+        <i class="fa fa-chevron-up"></i> 1.32
+      </sup></p>
+    </div>
+  </div>
+  <div class="col-sm">
+    <div class="container-fluid shadow-sm p-3 mb-5 bg-white rounded">
+      <h5> Rate of return </h5>
+      <p style="margin-bottom: 0"> 23%
+        <sup style="color:red">
+        <i class="fa fa-chevron-down"></i> -1.1
+      </sup></p>
+    </div>
+  </div>
+  <div class="col-sm">
+    <div class="container-fluid shadow-sm p-3 mb-5 bg-white rounded">
+      <h5> Alpha </h5>
+      <p style="margin-bottom: 0"> 0.02
+        <sup style="color:limegreen">
+        <i class="fa fa-chevron-up"></i> 0.01
+      </sup></p>
+    </div>
+  </div>
+  <div class="col-sm">
+    <div class="container-fluid shadow-sm p-3 mb-5 bg-white rounded">
+      <h5> Number of investments </h5>
+      <p style="margin-bottom: 0"> {{num_investments}}
+        <sup style="color:limegreen">
+        <i class="fa fa-chevron-up"></i> 2
+      </sup></p>
+    </div>
+  </div>
+</div>
+
+<!-- Line chart and residual -->
+<div class="container-fluid shadow-sm p-3 mb-5 bg-white rounded">
+  <div class="row">
+    <div class="col-sm">
+      <canvas id="lineChart"></canvas>
+    </div>
+    <div class="col-sm">
+      <canvas id="scatterChart"></canvas>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- Visualisations of portfolio -->
+<h1 class="display-3" style="text-align: center;"> Visualisation </h1>
+
+<div class="container-fluid shadow-sm p-3 mb-5 bg-white rounded">
+  <div class="row">
+    <div class="col-sm">
+      <canvas id="pieChart"></canvas>
+    </div>
+    <div class="col-sm">
+      <canvas id="barChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid shadow-sm p-3 mb-5 bg-white rounded" style="width:90%!important; height:500px!important; margin:auto;">
+  <canvas id="compLineChart"></canvas>
+</div>
+
+
+
+<!-- Portfolio of investments table -->
+<h1 class="display-3" style="text-align: center;"> Portfolio </h1>
+
+<div class="container-fluid shadow-sm p-3 mb-5 bg-white rounded">
+  <table class="table table-hover">
+    <thead>
+      <tr>
+        {% for header in headings %}
+        <th scope="col"> {{ header }} </th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+    {% for row in data %}
+    <tr>
+      {% for cell in row %}
+        <td>
+          {{ cell }}
+        </td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+
+
+
+<script>
+  // create the chart
+  var lineChart, residualChart;
+  // loadData(init=true);
+
+  // update the chart with new data every 10 seconds
+  //setInterval(loadData, 10000);
+
+  // Method to allow updating the chart dynamically
+  function updateData(timescale, sp500, portfolio) {
+
+    // update line chart
+    lineChart.data.datasets[0].data = sp500;
+    lineChart.data.datasets[1].data = portfolio;
+
+    // update residual chart
+    residualChart.data.datasets[0].data = zipData(sp500, portfolio);
+    residualChart.data.datasets[1].data = calcRegress(sp500, portfolio);
+
+    lineChart.update();
+    residualChart.update();
+  }
+
+  const timescale = {{timescale | safe}};
+  const portfolio_price = {{portfolio_price | safe}};
+  const portfolio_prices = {{portfolio_prices | safe}};
+  const portfolio_performance = {{portfolio_performance | safe}};
+  const sp500_price = {{sp500_price | safe}};
+  lineChart = loadLineChart(timescale, portfolio_price, portfolio_performance, sp500_price);
+  residualChart = loadResidualChart(timescale, portfolio_performance, sp500_price);
+  loadBarChart(portfolio_prices);
+
+  // // AJAX
+  // // Load stock data from external JSON web file, responsible for maintaining chart
+  // function loadData(init=false){
+  //   var xhr = new XMLHttpRequest();
+  //   xhr.open('GET', 'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=IBM&apikey=demo', true);
+  //
+  //   xhr.onload = function(){
+  //     if(this.status === 200){
+  //       let stockData = JSON.parse(this.responseText);
+  //
+  //       let timeSeries = stockData['Time Series (Daily)'];
+  //
+  //       let closePrice = [];
+  //
+  //       for(const day in timeSeries){
+  //         closePrice.push(parseFloat(timeSeries[day]['1. open']));
+  //       }
+  //
+  //       closePrice.reverse();
+  //       console.log(closePrice);
+  //
+  //       //let portfolioPrice = closePrice;
+  //       // randomised portfolio price
+  //       let portfolioPrice = [];
+  //       for(const price in closePrice) {
+  //         portfolioPrice.push(price * Math.random() * 10)
+  //       }
+  //
+  //       let timescale = []
+  //       for(let i=0; i < portfolioPrice.length; i++)
+  //         timescale[i] = i;
+  //
+  //       console.log(timescale);
+  //
+  //       if(init){
+  //         lineChart = loadLineChart(timescale, portfolioPrice, closePrice);
+  //         residualChart = loadResidualChart(timescale, portfolioPrice, closePrice);
+  //       }
+  //       else {
+  //         updateData(timescale, portfolioPrice, closePrice);
+  //       }
+  //
+  //     }
+  //   }
+  //
+  //   xhr.send();
+  // }
+
+  // create the Chart.js line chart with initial data (only done once)
+  function loadLineChart(timescale, portfolioPrice, portfolioPerformance, closePrice) {
+    const ctx = document.getElementById("lineChart").getContext("2d");
+    return new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: timescale,
+        datasets: [
+          {
+            label: "Portfolio (actual)",
+            data: portfolioPerformance,
+            fill: false,
+            borderColor: "rgb(20, 123, 220)",
+            lineTension: 0
+          },
+          {
+            label: "Portfolio (theoretical)",
+            data: portfolioPrice,
+            fill: false,
+            borderColor: "rgb(20, 203, 200)",
+            lineTension: 0
+          },
+          {
+            label: "S&P 500",
+            data: closePrice,
+            borderDash: [10, 3],
+            fill: true,
+            backgroundColor: "rgba(0,146,255,0.17)",
+            borderColor: "rgb(83,171,238)",
+            lineTension: 0
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          xAxes: [{
+            ticks: {
+              autoSkip: true,
+              maxTicksLimit: 4,
+              maxRotation: 0,
+              minRotation: 0,
+            },
+            gridLines: {
+              display: false,
+            }
+          }],
+          yAxes: [{
+            scaleLabel: {
+              display: true,
+              labelString: '% Weighted return',
+            },
+          }]
+        },
+        legend: {
+          position: 'top',
+        },
+        title: {
+          display: true,
+          text: 'Growth performance chart - Portfolio vs S&P 500',
+        },
+        elements: {
+            point:{
+                radius: 0,
+                hitRadius: 2,
+            }
+        }
+      },
+    });
+
+  }
+
+
+<!-- Scatter plot (Portfolio vs Index) -->
+
+  function zipData(xArr, yArr) {
+    var arr = [];
+    for (let i = 0; i < xArr.length; i++) {
+      arr.push( {x: xArr[i], y: yArr[i], id: i} );
+    }
+    return arr;
+  }
+
+  function calcRegress(xArr, yArr) {
+    const regression = [
+      {x: 0, y: 0},
+      {x: Math.max(...yArr), y: Math.max(...yArr)},
+    ];
+    return regression
+  }
+
+  // create the Chart.js residual chart with initial data (only done once)
+  function loadResidualChart(timescale, portfolioPerformance, closePrice) {
+    const ctx = document.getElementById("scatterChart").getContext("2d");
+    return new Chart(ctx, {
+      type: "scatter",
+      data: {
+        datasets: [{
+            data: zipData(closePrice, portfolioPerformance),
+            borderColor: "rgb(0, 123, 255)"
+            },{
+            data: calcRegress(closePrice, portfolioPerformance),
+            borderColor: "rgb(0, 123, 255)",
+            backgroundColor: 'transparent',
+            type: 'line',
+        }],
+      },
+      options: {
+        plugins: {
+          legend: {
+            display: false,
+          },
+        },
+        scales: {
+          xAxes: [{
+            scaleLabel: {
+              display: true,
+              labelString: '% returns of S&P500',
+            },
+            type: 'linear',
+            position: 'bottom',
+          }],
+          yAxes: [{
+            scaleLabel: {
+              display: true,
+              labelString: '% returns of Portfolio',
+            },
+            ticks: {
+              beginAtZero: true,
+            },
+          }],
+        },
+        legend: {
+          display: false,
+        },
+        title: {
+          display: true,
+          text: 'Residual chart - Portfolio vs S&P500',
+        },
+      },
+    });
+  }
+
+
+  // Pie chart (all investments)
+  function loadPieChart() {
+    const data = {{ stocks | safe}};
+    const ctx = document.getElementById("pieChart").getContext("2d");
+    return new Chart(ctx, {
+      type: "pie",
+      data: {
+        labels: data['data'], // tickers
+        datasets: [
+          {
+            label: "Portfolio",
+            data: data['percentages'],
+            backgroundColor: data['colours'],
+          },
+        ]
+      },
+      options: {
+        responsive: true,
+        legend: {
+          position: 'top',
+        },
+        title: {
+          display: true,
+          text: "Portfolio distribution",
+        },
+      },
+    });
+  }
+  loadPieChart();
+
+  // Bar chart
+  function loadBarChart(portfolio_prices) {
+    const data = {{ stocks | safe}};
+    new Chart(document.getElementById("barChart"), {
+      type: 'bar',
+      data: {
+        labels: data['data'], // tickers
+        datasets: [
+          {
+            label: "Percentage change",
+            backgroundColor: data['colours'],
+            data: portfolio_prices
+          }, {
+            label: "Expected percentage change",
+            backgroundColor: data['greyed_colours'],
+            data: [2.3, 3.3, 2, 5, 1]
+          }
+        ]
+      },
+      options: {
+        legend: {display: false},
+        title: {
+          display: true,
+          text: "Return (%) for the period of last month"
+        }
+      }
+    });
+  }
+
+  // Comparison line chart
+  function loadCompLineChart() {
+    new Chart(document.getElementById("compLineChart"), {
+      type: 'line',
+      data: {
+        labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October'],
+        datasets: [{
+          data: [86, 114, 106, 106, 107, 111, 133, 221, 783, 2478],
+          label: "AAPL",
+          borderColor: "#3e95cd",
+          fill: false
+        }, {
+          data: [282, 350, 411, 502, 635, 809, 947, 1402, 3700, 5267],
+          label: "MSFT",
+          borderColor: "#8e5ea2",
+          fill: false
+        }, {
+          data: [168, 170, 178, 190, 203, 276, 408, 547, 675, 734],
+          label: "JDW",
+          borderColor: "#3cba9f",
+          fill: false
+        }, {
+          data: [40, 20, 10, 16, 24, 38, 74, 167, 508, 784],
+          label: "MCFE",
+          borderColor: "#e8c3b9",
+          fill: false
+        }, {
+          data: [6, 3, 2, 2, 7, 26, 82, 172, 312, 433],
+          label: "DARK",
+          borderColor: "#c45850",
+          fill: false
+        }
+        ]
+      },
+      options: {
+        title: {
+          display: true,
+          text: "Portfolio constituents performance"
+        },
+        legend: {
+          position: 'chartArea',
+        },
+        maintainAspectRatio: false,
+        responsive: true,
+      }
+    });
+  }
+  loadCompLineChart();
+
+</script>
+
+{% endblock %}

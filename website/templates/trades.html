@@ -1,0 +1,114 @@
+{% extends "base.html" %} {% block title %}Trades{% endblock %}
+
+{% block content %}
+<link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/trades.css') }}">
+
+
+{% for trade in trade_data %}
+<div class="tradeContainer container-fluid shadow-sm p-3 mb-5 bg-white rounded">
+    <table class="table table-borderless">
+        <tbody>
+            <tr>
+                {% if trade.order == 0%}
+                <td class="trade buy vdiv">Buy</td>
+                {% else %}
+                <td class="trade sell vdiv">Sell</td>
+                {% endif %}
+                <td class="stock vdiv">{{trade.ticker}}</td>
+                <td class="price vdiv">£{{"{:.2f}".format(trade.price)}}</td>
+                <td class="date">{{trade.date.strftime("%d %b %Y, %H:%M")}}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{% endfor %}
+
+
+<div id="bottom">
+    <form class="row g-3 needs-validation" method="POST" novalidate>
+        <div class="col-md-4">
+            <label for="ticker" class="form-label">Ticker</label>
+            <input type="text" class="form-control" name="ticker" id="ticker" placeholder="AAPL" required>
+            <div class="valid-feedback">
+                Looks good!
+            </div>
+            <div class="invalid-feedback">
+                e.g: AAPL, MSFT
+            </div>
+        </div>
+        <div class="col-md-4">
+            <label for="price" class="form-label">Price</label>
+            <div class="input-group has-validation">
+                <span class="input-group-text" id="inputGroupPrepend">£</span>
+                <input type="number" step="0.01" class="form-control" id="price" name="price"
+                       aria-describedby="inputGroupPrepend" required>
+                <div class="invalid-feedback">
+                    The transaction amount
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <label for="date" class="form-label">Date & Time</label>
+            <input type="datetime-local" class="form-control" id="date" name="date" required>
+            <div class="valid-feedback">
+                Looks good!
+            </div>
+            <div class="invalid-feedback">
+                Enter the date
+            </div>
+        </div>
+        <div class="col-12" style="margin-top: 10px;">
+            <button class="btn btn-primary buy" name="buy" type="submit">Buy</button>
+            <button class="btn btn-primary sell" name="sell" type="submit">Sell</button>
+        </div>
+    </form>
+</div>
+
+
+<!-- Example starter JavaScript for disabling form submissions if there are invalid fields -->
+<script>
+    (function () {
+      'use strict'
+
+      // Fetch all the forms we want to apply custom Bootstrap validation styles to
+      var forms = document.querySelectorAll('.needs-validation')
+
+      // Loop over them and prevent submission
+      Array.prototype.slice.call(forms)
+        .forEach(function (form) {
+          form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+              event.preventDefault()
+              event.stopPropagation()
+            }
+
+            form.classList.add('was-validated')
+          }, false)
+        })
+    })()
+</script>
+
+<!-- JavaScript for handling trades display -->
+<script>
+    document.getElementById('btn').addEventListener('click', loadTable);
+
+    function loadTable(){
+        output =
+            '<div class="tradeContainer container-fluid shadow-sm p-3 mb-5 bg-white rounded">' +
+            '<table class="table table-borderless">' +
+                '<tbody>' +
+                '<tr>' +
+                    '<td class="trade buy vdiv">Buy</td>' +
+                    '<td class="stock vdiv">AAPL</td>' +
+                    '<td class="price vdiv">£132</td>' +
+                    '<td class="date">21 Aug 2021</td>' +
+                '</tr>' +
+                '</tbody>' +
+            '</table>' +
+        '</div>'
+
+        document.getElementById('test').innerHTML += output;
+    }
+</script>
+
+{% endblock %}
